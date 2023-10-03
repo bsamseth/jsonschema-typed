@@ -6,6 +6,7 @@ import re
 import uuid
 import importlib
 import warnings
+from packaging.version import Version
 from collections import OrderedDict
 from typing import Optional, Callable, Any, Union, List, Set, Dict
 from abc import abstractmethod
@@ -527,9 +528,11 @@ class JSONSchemaPlugin(Plugin):
                 if not ctx.type.args:
                     return ctx.type
                 schema_path, *key_path = list(map(self.resolve_var, ctx.type.args))
-
-                schema_path = os.path.abspath(schema_path)
-                schema = self._load_schema(schema_path)
+                if isinstance(schema_path, dict):
+                    schema = schema_path
+                else:
+                    schema_path = os.path.abspath(schema_path)
+                    schema = self._load_schema(schema_path)
 
                 if key_path:
                     schema = self.make_subschema(schema, key_path)
@@ -580,7 +583,7 @@ class TypeMaker:
 
 def plugin(version: str):
     """See `https://mypy.readthedocs.io/en/latest/extending_mypy.html`_."""
-    if float(version) < 0.7:
+    if Version(version) < Version("0.7"):
         warnings.warn(
             "This plugin not tested below mypy 0.710. But you can"
             f" test it and let us know at {ISSUE_URL}."
